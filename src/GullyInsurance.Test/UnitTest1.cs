@@ -1,4 +1,6 @@
 ﻿using System;
+using GullyInsurance.Policy.Domain;
+using GullyInsurance.Policy.Domain.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace GullyInsurance.Test
@@ -9,6 +11,9 @@ namespace GullyInsurance.Test
         [TestMethod]
         public void TestMethod1()
         {
+            var i = new AmendService();
+            i.RunAmend(new InsureVehicle(){PolicyId = Guid.NewGuid()});
+
         }
     }
 }

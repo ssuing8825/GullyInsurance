@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GullyInsurance.Policy.Domain
+namespace GullyInsurance.Policy.Domain.Model
 {
-    public class Class1
+    public class InsureVehicle
     {
+        public Guid PolicyId { get; set; }
     }
 }
