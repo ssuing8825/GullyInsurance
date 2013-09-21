@@ -4,10 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GullyInsurance.Policy.Domain.Model
+namespace GullyInsurance.Policy.Domain.Events
 {
-    public class InsureVehicle
+    public class CancelEvent
     {
         public Guid PolicyId { get; set; }
+        public string Name { get; set; }
+
     }
 }
