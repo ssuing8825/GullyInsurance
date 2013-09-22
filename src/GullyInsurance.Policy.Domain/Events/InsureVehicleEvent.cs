@@ -11,10 +11,14 @@ namespace GullyInsurance.Policy.Domain.Events
         public string Make { get; set; }
         public string VIN { get; set; }
 
-        public override void Process()
+        internal override void Process()
         {
-            
            Console.WriteLine("Insuring a Vehicle");
+        }
+
+        internal override void Reverse()
+        {
+            throw new NotImplementedException();
         }
     }
 }

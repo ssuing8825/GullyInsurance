@@ -19,9 +19,13 @@ namespace GullyInsurance.Policy.Domain.Events
             VehicleToAdd = vehicle;
         }
 
-        public override void Process()
+        internal override void Process()
         {
             Policy.HandleAddVehicleToQuoteEvent(this);
+        }
+        internal override void Reverse()
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -14,9 +14,13 @@ namespace GullyInsurance.Policy.Domain.Events
             Policy = policy;
         }
 
-        public override void Process()
+        internal override void Process()
         {
             Policy.HandleBind(this);
+        }
+        internal override void Reverse()
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -11,19 +11,35 @@ namespace GullyInsurance.Policy.Domain.Events
     public abstract class DomainEvent
     {
         public DateTime Recorded { get; set; }
-        public DateTime Occured { get; set; }
+        public DateTime Occurred { get; set; }
         public Guid PolicyId { get; set; }
+
+        public bool ShouldIgnoreOnReplay
+        {
+            get { return false; }
+        }
 
         protected DomainEvent()
         {
         }
+        public bool IsConsequenceOf(DomainEvent other)
+        {
+            return (!ShouldIgnoreOnReplay && this.After(other));
+        }
+        internal bool After(DomainEvent ev)
+        {
+            return this.Occurred < ev.Occurred;
+        }
+
+
 
         protected DomainEvent(DateTime recorded)
         {
             Recorded = recorded;
-            Occured = DateTime.Now;
+            Occurred = DateTime.Now;
         }
 
-        public abstract void Process();
+        internal abstract void Process();
+        internal abstract void Reverse();
     }
 }

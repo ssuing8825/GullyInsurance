@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Transactions;
 using GullyInsurance.Policy.Domain.Events;
 using GullyInsurance.Policy.Domain.Model;
@@ -14,6 +18,7 @@ namespace GullyInsurance.Policy.Domain
     public class AmendService
     {
         private static IStoreEvents store;
+        private static IEventStream stream;
 
         private static readonly byte[] EncryptionKey = new byte[]
             {
@@ -47,7 +52,7 @@ namespace GullyInsurance.Policy.Domain
             using (var scope = new TransactionScope())
             using (store = WireupEventStore())
             {
-                using (var stream = store.OpenStream(policyId, int.MinValue, int.MaxValue))
+                using (stream = store.OpenStream(policyId, int.MinValue, int.MaxValue))
                 {
                     foreach (EventMessage @event in stream.CommittedEvents)
                     {
@@ -66,7 +71,7 @@ namespace GullyInsurance.Policy.Domain
             using (var scope = new TransactionScope())
             using (store = WireupEventStore())
             {
-                using (var stream = store.OpenStream(policyId, int.MinValue, maxRevisionNumber))
+                using (stream = store.OpenStream(policyId, int.MinValue, maxRevisionNumber))
                 {
                     foreach (EventMessage @event in stream.CommittedEvents)
                     {
@@ -81,7 +86,7 @@ namespace GullyInsurance.Policy.Domain
 
         private void AppendToStream(DomainEvent domainEvent)
         {
-            using (IEventStream stream = store.OpenStream(domainEvent.PolicyId, int.MinValue, int.MaxValue))
+            using (stream = store.OpenStream(domainEvent.PolicyId, int.MinValue, int.MaxValue))
             {
                 stream.Add(new EventMessage { Body = domainEvent });
                 stream.CommitChanges(Guid.NewGuid());
@@ -92,7 +97,7 @@ namespace GullyInsurance.Policy.Domain
             // we can call CreateStream(StreamId) if we know there isn't going to be any data.
             // or we can call OpenStream(StreamId, 0, int.MaxValue) to read all commits,
             // if no commits exist then it creates a new stream for us.
-            using (IEventStream stream = store.OpenStream(policy.PolicyId, 0, int.MaxValue))
+            using (stream = store.OpenStream(policy.PolicyId, 0, int.MaxValue))
             {
                 stream.Add(new EventMessage { Body = policy });
                 stream.CommitChanges(Guid.NewGuid());
@@ -120,7 +125,7 @@ namespace GullyInsurance.Policy.Domain
 
         }
 
-        private static void DispatchCommit(Commit commit)
+        private void DispatchCommit(Commit commit)
         {
             // This is where we'd hook into our messaging infrastructure, such as NServiceBus,
             // MassTransit, WCF, or some other communications infrastructure.
@@ -129,14 +134,100 @@ namespace GullyInsurance.Policy.Domain
             {
                 foreach (EventMessage @event in commit.Events)
                 {
-                    Console.WriteLine("Message dispatched " + ((DomainEvent)@event.Body).PolicyId);
-                    ((DomainEvent)@event.Body).Process();
+                    var ev = (DomainEvent)@event.Body;
+
+                    try
+                    {
+                        if (ev is ReplacementEvent)
+                        {
+                            ProcessReplacement((ReplacementEvent)ev);
+                        }
+
+                        else if (OutOfOrder(ev))
+                            ProcessOutOfOrder(ev);
+                        else
+                        {
+                            BasicProcessEvent(ev);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+
+                        //ev.ProcessingError = ex;
+                        //if (ShouldRethrowExceptions) throw ex;
+                    }
+
+
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Unable to dispatch {0}", ex);
             }
+        }
+
+        private static void ProcessReplacement(ReplacementEvent replacementEvent)
+        {
+            throw new NotImplementedException();
+        }
+
+        private bool OutOfOrder(DomainEvent e)
+        {
+            if (LogIsEmpty()) return false;
+            return (LastEvent().After(e));
+
+        }
+        private DomainEvent LastEvent()
+        {
+            if (LogIsEmpty()) return null;
+            return (DomainEvent)stream.CommittedEvents.Last().Body;
+        }
+        private bool LogIsEmpty()
+        {
+            return 0 == stream.CommittedEvents.Count;
+        }
+
+        private void ProcessOutOfOrder(DomainEvent e)
+        {
+            RewindTo(e);
+            BasicProcessEvent(e);
+            ReplayAfter(e);
+        }
+
+        private void ReplayAfter(DomainEvent e)
+        {
+            throw new NotImplementedException();
+        }
+
+  
+        private void RewindTo(DomainEvent priorEvent)
+        {
+            IList<> consequences = Consequences(priorEvent);
+            for (int i = consequences.Count - 1; i >= 0; i--)
+                BasicReverseEvent(((DomainEvent)consequences[i]));
+        }
+        private List<DomainEvent> Consequences(DomainEvent baseEvent)
+        {
+            var result = new List<DomainEvent>();
+
+            foreach (var candidate in stream.CommittedEvents)
+            {
+                if (((DomainEvent)candidate.Body).IsConsequenceOf(baseEvent)) 
+                    result.Add((DomainEvent)candidate.Body);
+            }
+            return result;
+        }
+
+        private void BasicProcessEvent(DomainEvent e)
+        {
+            Console.WriteLine("Message dispatched " + e.PolicyId);
+            e.Process();
+        }
+        private void BasicReverseEvent(DomainEvent e)
+        {
+            Console.WriteLine("Message Reversed " + e.PolicyId);
+            e.Reverse();
         }
 
         public void CreateSnapShot(AutoPolicy policy, int streamRevision)
@@ -147,7 +238,6 @@ namespace GullyInsurance.Policy.Domain
                 store.Advanced.AddSnapshot(new Snapshot(policy.PolicyId, streamRevision, policy));
                 scope.Complete();
             }
-
         }
     }
 }

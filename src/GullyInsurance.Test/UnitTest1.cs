@@ -45,11 +45,13 @@ namespace GullyInsurance.Test
 
             //Let's get it our and take a look at it.
             var newP = i.GetCurrentPolicy(newEventStreamGuid);
-            Console.WriteLine(newP.Vehicles.Count);
+            Assert.AreEqual(1, newP.Vehicles.Count);
             i.CreateSnapShot(newP, 2);
 
             newP = i.GetPolicy(newEventStreamGuid, 1);
-            Console.WriteLine(newP.Vehicles.Count);
+            Assert.AreEqual(0, newP.Vehicles.Count);
+
+            //Now let's insert a resp
 
         }
     }

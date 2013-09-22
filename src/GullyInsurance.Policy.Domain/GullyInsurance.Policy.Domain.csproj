@@ -61,6 +61,7 @@
     <Compile Include="Events\DomainEvent.cs" />
     <Compile Include="Events\IContainPolicy.cs" />
     <Compile Include="Events\RenewEvent.cs" />
+    <Compile Include="Events\ReplacementEvent.cs" />
     <Compile Include="Model\AutoPolicy.cs" />
     <Compile Include="Events\InsureVehicleEvent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

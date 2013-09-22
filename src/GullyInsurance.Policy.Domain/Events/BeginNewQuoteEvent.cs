@@ -17,9 +17,13 @@ namespace GullyInsurance.Policy.Domain.Events
             Policy = new AutoPolicy();
          }
 
-        public override void Process()
+        internal override void Process()
         {
             Policy.HandleBeginNewPolicyQuoteEvent(this);
+        }
+        internal override void Reverse()
+        {
+            throw new NotImplementedException();
         }
     }
 }
