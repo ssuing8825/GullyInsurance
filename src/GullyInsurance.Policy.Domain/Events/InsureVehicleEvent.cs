@@ -13,6 +13,7 @@ namespace GullyInsurance.Policy.Domain.Events
 
         public override void Process()
         {
+            
            Console.WriteLine("Insuring a Vehicle");
         }
     }

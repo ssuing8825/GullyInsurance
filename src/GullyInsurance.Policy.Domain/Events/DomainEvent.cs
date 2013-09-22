@@ -7,8 +7,8 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace GullyInsurance.Policy.Domain.Events
 {
-    [BsonKnownTypes(typeof(InsureVehicleEvent), typeof(BindEvent))]
-    public class DomainEvent
+    [BsonKnownTypes(typeof(InsureVehicleEvent), typeof(BindEvent), typeof(AddVehicleToQuoteEvent), typeof(BeginNewPolicyQuoteEvent))]
+    public abstract class DomainEvent
     {
         public DateTime Recorded { get; set; }
         public DateTime Occured { get; set; }
@@ -24,6 +24,6 @@ namespace GullyInsurance.Policy.Domain.Events
             Occured = DateTime.Now;
         }
 
-        public virtual void Process() { }
+        public abstract void Process();
     }
 }

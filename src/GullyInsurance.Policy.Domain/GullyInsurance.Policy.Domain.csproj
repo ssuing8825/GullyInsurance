@@ -54,9 +54,12 @@
   <ItemGroup>
     <Compile Include="AmendService.cs" />
     <Compile Include="AuthorizationPipelineHook.cs" />
+    <Compile Include="Events\AddVehicleToQuoteEvent.cs" />
+    <Compile Include="Events\BeginNewQuoteEvent.cs" />
     <Compile Include="Events\BindEvent.cs" />
     <Compile Include="Events\CancelEvent.cs" />
     <Compile Include="Events\DomainEvent.cs" />
+    <Compile Include="Events\IContainPolicy.cs" />
     <Compile Include="Events\RenewEvent.cs" />
     <Compile Include="Model\AutoPolicy.cs" />
     <Compile Include="Events\InsureVehicleEvent.cs" />

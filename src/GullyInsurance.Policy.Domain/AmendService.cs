@@ -20,19 +20,18 @@ namespace GullyInsurance.Policy.Domain
                 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf
             };
 
-        public void HandleBindEvent(BindEvent policy)
+
+
+        public void ProcessEventUsingNewStream(DomainEvent domainEvent)
         {
             using (var scope = new TransactionScope())
             using (store = WireupEventStore())
             {
-                OpenOrCreateStream(policy);
-                //AppendToStream(policy);
-                //TakeSnapshot();
-                //LoadFromSnapshotForwardAndAppend();
+                OpenOrCreateStream(domainEvent);
                 scope.Complete();
             }
         }
-        public void HandleInsuredVehicleEvent(InsureVehicleEvent domainEvent)
+        public void ProcessEventUsingExistingStream(DomainEvent domainEvent)
         {
             using (var scope = new TransactionScope())
             using (store = WireupEventStore())
@@ -41,6 +40,27 @@ namespace GullyInsurance.Policy.Domain
                 scope.Complete();
             }
         }
+
+        public AutoPolicy GetCurrentPolicy(Guid policyId)
+        {
+            AutoPolicy policy = null;
+            using (var scope = new TransactionScope())
+            using (store = WireupEventStore())
+            {
+                using (var stream = store.OpenStream(policyId, int.MinValue, int.MaxValue))
+                {
+                    foreach (EventMessage @event in stream.CommittedEvents)
+                    {
+                        ((DomainEvent)@event.Body).Process();
+                        if (@event.Body is IContainPolicy)
+                            policy = ((IContainPolicy) @event.Body).Policy;
+                    }
+                }
+            }
+            return policy;
+
+        }
+
         private void AppendToStream(DomainEvent domainEvent)
         {
             using (IEventStream stream = store.OpenStream(domainEvent.PolicyId, int.MinValue, int.MaxValue))
@@ -49,12 +69,12 @@ namespace GullyInsurance.Policy.Domain
                 stream.CommitChanges(Guid.NewGuid());
             }
         }
-        private static void OpenOrCreateStream(BindEvent policy)
+        private static void OpenOrCreateStream(DomainEvent policy)
         {
             // we can call CreateStream(StreamId) if we know there isn't going to be any data.
             // or we can call OpenStream(StreamId, 0, int.MaxValue) to read all commits,
             // if no commits exist then it creates a new stream for us.
-            using (IEventStream stream = store.OpenStream(policy.Policy.PolicyId, 0, int.MaxValue))
+            using (IEventStream stream = store.OpenStream(policy.PolicyId, 0, int.MaxValue))
             {
                 stream.Add(new EventMessage { Body = policy });
                 stream.CommitChanges(Guid.NewGuid());
@@ -93,12 +113,11 @@ namespace GullyInsurance.Policy.Domain
                 {
                     Console.WriteLine("Message dispatched " + ((DomainEvent)@event.Body).PolicyId);
                     ((DomainEvent)@event.Body).Process();
-
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Console.WriteLine("Unable to dispatch");
+                Console.WriteLine("Unable to dispatch {0}",ex );
             }
         }
     }
