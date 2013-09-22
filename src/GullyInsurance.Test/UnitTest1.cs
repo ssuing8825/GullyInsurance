@@ -35,14 +35,20 @@ namespace GullyInsurance.Test
             var q = new BeginNewPolicyQuoteEvent(newEventStreamGuid);
             i.ProcessEventUsingNewStream(q);
             var vehicleId = Guid.NewGuid();
-            var av = new AddVehicleToQuoteEvent(q.Policy, new Vehicle() { VehicleId = vehicleId , Vin = "213"});
+            var av = new AddVehicleToQuoteEvent(q.Policy, new Vehicle() { VehicleId = vehicleId, Vin = "213" });
             i.ProcessEventUsingExistingStream(av);
+            i.ProcessEventUsingExistingStream(new BindEvent(av.Policy));
+
 
             //At this point we have a new quote with one vehicle.
             //There is no policy, just a quote and it is very early on in the life of the policy
-            
+
             //Let's get it our and take a look at it.
             var newP = i.GetCurrentPolicy(newEventStreamGuid);
+            Console.WriteLine(newP.Vehicles.Count);
+            i.CreateSnapShot(newP, 2);
+
+            newP = i.GetPolicy(newEventStreamGuid, 1);
             Console.WriteLine(newP.Vehicles.Count);
 
         }

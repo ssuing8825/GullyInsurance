@@ -53,12 +53,30 @@ namespace GullyInsurance.Policy.Domain
                     {
                         ((DomainEvent)@event.Body).Process();
                         if (@event.Body is IContainPolicy)
-                            policy = ((IContainPolicy) @event.Body).Policy;
+                            policy = ((IContainPolicy)@event.Body).Policy;
                     }
                 }
             }
             return policy;
+        }
 
+        public AutoPolicy GetPolicy(Guid policyId, int maxRevisionNumber)
+        {
+            AutoPolicy policy = null;
+            using (var scope = new TransactionScope())
+            using (store = WireupEventStore())
+            {
+                using (var stream = store.OpenStream(policyId, int.MinValue, maxRevisionNumber))
+                {
+                    foreach (EventMessage @event in stream.CommittedEvents)
+                    {
+                        ((DomainEvent)@event.Body).Process();
+                        if (@event.Body is IContainPolicy)
+                            policy = ((IContainPolicy)@event.Body).Policy;
+                    }
+                }
+            }
+            return policy;
         }
 
         private void AppendToStream(DomainEvent domainEvent)
@@ -117,10 +135,21 @@ namespace GullyInsurance.Policy.Domain
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Unable to dispatch {0}",ex );
+                Console.WriteLine("Unable to dispatch {0}", ex);
             }
         }
+
+        public void CreateSnapShot(AutoPolicy policy, int streamRevision)
+        {
+            using (var scope = new TransactionScope())
+            using (store = WireupEventStore())
+            {
+                store.Advanced.AddSnapshot(new Snapshot(policy.PolicyId, streamRevision, policy));
+                scope.Complete();
+            }
+
+        }
     }
-
-
 }
+
+
