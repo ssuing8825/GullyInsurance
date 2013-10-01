@@ -11,7 +11,7 @@ namespace GullyInsurance.Policy.Domain.Events
     {
         public AutoPolicy Policy { get; set; }
 
-        public BeginNewPolicyQuoteEvent(Guid policyId)
+        public BeginNewPolicyQuoteEvent(Guid policyId):base(DateTime.Now)
         {
             PolicyId = policyId;
             Policy = new AutoPolicy();

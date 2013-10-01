@@ -13,6 +13,7 @@ namespace GullyInsurance.Policy.Domain.Events
         public Vehicle VehicleToAdd { get; set; }
 
         public AddVehicleToQuoteEvent(AutoPolicy policy, Vehicle vehicle)
+            : base(DateTime.Now)
         {
             Policy = policy;
             this.PolicyId = Policy.PolicyId;
@@ -21,6 +22,7 @@ namespace GullyInsurance.Policy.Domain.Events
 
         internal override void Process()
         {
+            Console.WriteLine("Adding Vehicle to Policy");
             Policy.HandleAddVehicleToQuoteEvent(this);
         }
         internal override void Reverse()

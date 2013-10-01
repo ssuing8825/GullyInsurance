@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Transactions;
 using GullyInsurance.Policy.Domain.Events;
+using GullyInsurance.Policy.Domain.ExternalSystems;
 using GullyInsurance.Policy.Domain.Model;
 using NEventStore;
 using NEventStore.Dispatcher;
@@ -20,12 +21,18 @@ namespace GullyInsurance.Policy.Domain
         private static IStoreEvents store;
         private static IEventStream stream;
 
+        public bool IsActive { get; set; }
+
         private static readonly byte[] EncryptionKey = new byte[]
             {
                 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf
             };
 
+        public AmendService()
+        {
+            Registry r = new Registry(this);
 
+        }
 
         public void ProcessEventUsingNewStream(DomainEvent domainEvent)
         {
@@ -119,10 +126,7 @@ namespace GullyInsurance.Policy.Domain
 
         public string GetConnectionString()
         {
-
             return "mongodb://localhost/EventSource?safe=true";
-
-
         }
 
         private void DispatchCommit(Commit commit)
@@ -203,7 +207,7 @@ namespace GullyInsurance.Policy.Domain
   
         private void RewindTo(DomainEvent priorEvent)
         {
-            IList<> consequences = Consequences(priorEvent);
+            IList<DomainEvent> consequences = Consequences(priorEvent);
             for (int i = consequences.Count - 1; i >= 0; i--)
                 BasicReverseEvent(((DomainEvent)consequences[i]));
         }
@@ -222,7 +226,9 @@ namespace GullyInsurance.Policy.Domain
         private void BasicProcessEvent(DomainEvent e)
         {
             Console.WriteLine("Message dispatched " + e.PolicyId);
+            IsActive = true;
             e.Process();
+            IsActive = false;
         }
         private void BasicReverseEvent(DomainEvent e)
         {
